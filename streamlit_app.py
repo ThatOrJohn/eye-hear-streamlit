@@ -20,7 +20,8 @@ documenting in a police report.  Pay particular attention to people,
 gestures, animals, and vehicles.  You are only to discuss the contents 
 of provided videos.  Transcribe any detectable audio.  Keep your 
 descriptions under 1500 words per video.  Do not state the video is
-from a doorbell camera.
+a recording from a doorbell camera, or that it is from a Ring doorbell,
+or anything regarding the positioning of the camera.
 """
 
 @st.cache_data
@@ -71,4 +72,13 @@ if uploaded_file is not None:
     mp3_stream = generate_audio(video_description)
     os.remove(tmp_file)
     st.video(uploaded_file)
+    st.audio(mp3_stream, autoplay=True)
+
+if st.button("Example video", type="primary"):
+    example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"
+    response = model.generate_content(example_url)
+    response_data = json.loads(response.text)
+    video_description = response_data.get('description')
+    mp3_stream = generate_audio(video_description)
+    st.video(example_url)
     st.audio(mp3_stream, autoplay=True)
