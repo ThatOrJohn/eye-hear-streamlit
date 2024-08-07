@@ -8,6 +8,11 @@ import google.generativeai as genai
 from gtts import gTTS
 from io import BytesIO
 
+st.set_page_config(
+    page_title=("EyeHear"),
+    page_icon="👁️👂"
+)
+
 prompt_json = """
 Describe the contents of the attached video using this JSON schema:
 
@@ -48,7 +53,6 @@ def generate_audio(video_description):
 
 model = create_gemini_model()
 
-st.title("EyeHear 👁️👂")
 st.write(
     "Proof of concept"
 )
