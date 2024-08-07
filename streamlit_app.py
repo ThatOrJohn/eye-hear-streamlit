@@ -8,10 +8,7 @@ import google.generativeai as genai
 from gtts import gTTS
 from io import BytesIO
 
-st.set_page_config(
-    page_title=("EyeHear"),
-    page_icon="👁️👂"
-)
+st.title("EyeHear 👁️👂")
 
 prompt_json = """
 Describe the contents of the attached video using this JSON schema:
