@@ -5,6 +5,8 @@ import streamlit as st
 import time
 import google.generativeai as genai
 
+from google.cloud import firestore
+from google.oauth2 import service_account
 from gtts import gTTS
 from io import BytesIO
 from st_files_connection import FilesConnection
@@ -55,10 +57,6 @@ def generate_audio(video_description):
     tts.write_to_fp(mp3_fp)
     return mp3_fp
 
-@st.cache_data
-def get_cloud_storage_connection():
-    conn = st.connection('gcs', type=FilesConnection)
-    return conn
 
 def store_audio_file(mp3_bytes_io, video_file_name):
     user_id = get_user_id()
@@ -69,19 +67,27 @@ def store_audio_file(mp3_bytes_io, video_file_name):
     cloud_mp3_file = f"{CLOUD_STORAGE_BUCKET}/audio/{user_id}/{mp3_file_name}"
     print(f"Writing {cloud_mp3_file} to cloud storage")
 
-    with open(tmp_mp3_file, "wb") as f:
-        f.write(mp3_bytes_io.getbuffer())
+    with open(tmp_mp3_file, "wb") as tmp_file:
+        tmp_file.write(mp3_bytes_io.getbuffer())
 
-    # conn = get_cloud_storage_connection()
-
-    # with open(tmp_mp3_file, "rb") as local_file:
-    conn = st.connection('gcs', type=FilesConnection)
-    with conn.open(cloud_mp3_file, "wb") as gcs_file:
+    file_storage_conn = st.connection('gcs', type=FilesConnection)
+    with file_storage_conn.open(cloud_mp3_file, "wb") as gcs_file:
         gcs_file.write(mp3_bytes_io.getbuffer())
 
     os.remove(tmp_mp3_file)
     return cloud_mp3_file
 
+
+def store_video_details(video_details):
+    print("begin store_video_details")
+    key_dict = json.loads(st.secrets.FIREBASE_KEY)
+
+    credentials = service_account.Credentials.from_service_account_info(key_dict)
+    firestore_db = firestore.Client(credentials=credentials, project="eyehear-firebase")
+    collection = firestore_db.collection("videos")
+    video_document = collection.add(document_data=video_details)
+
+    print("completed store_video_details")
 
 model = create_gemini_model()
 
@@ -110,6 +116,11 @@ if uploaded_file is not None:
     st.video(uploaded_file)
     st.audio(mp3_stream, autoplay=True)
     cloud_mp3_file = store_audio_file(mp3_stream, file_name)
+
+    response_data['user_id'] = get_user_id()
+    response_data['timestamp'] = time_received
+    response_data['audio_location'] = cloud_mp3_file
+    store_video_details(response_data)
 
 if st.button("Example video", type="primary"):
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"
