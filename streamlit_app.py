@@ -7,8 +7,15 @@ import google.generativeai as genai
 
 from gtts import gTTS
 from io import BytesIO
+from st_files_connection import FilesConnection
 
 st.title("EyeHear 👁️👂")
+
+CLOUD_STORAGE_BUCKET = "eyehear-firebase.appspot.com"
+GUEST_USER_ID = "f3d98f8c-cf8d-40a3-b5c3-5c7cd5e2b52a"
+
+def get_user_id():
+    return GUEST_USER_ID
 
 prompt_json = """
 Describe the contents of the attached video using this JSON schema:
@@ -48,6 +55,34 @@ def generate_audio(video_description):
     tts.write_to_fp(mp3_fp)
     return mp3_fp
 
+@st.cache_data
+def get_cloud_storage_connection():
+    conn = st.connection('gcs', type=FilesConnection)
+    return conn
+
+def store_audio_file(mp3_bytes_io, video_file_name):
+    user_id = get_user_id()
+    print(f"store_audio_file() for user_id: {user_id}, video: {video_file_name}")
+    mp3_file_name = os.path.splitext(video_file_name)[0]+'.mp3'
+    tmp_mp3_file = f"/tmp/{mp3_file_name}"
+
+    cloud_mp3_file = f"{CLOUD_STORAGE_BUCKET}/audio/{user_id}/{mp3_file_name}"
+    print(f"Writing {cloud_mp3_file} to cloud storage")
+
+    with open(tmp_mp3_file, "wb") as f:
+        f.write(mp3_bytes_io.getbuffer())
+
+    # conn = get_cloud_storage_connection()
+
+    # with open(tmp_mp3_file, "rb") as local_file:
+    conn = st.connection('gcs', type=FilesConnection)
+    with conn.open(cloud_mp3_file, "wb") as gcs_file:
+        gcs_file.write(mp3_bytes_io.getbuffer())
+
+    os.remove(tmp_mp3_file)
+    return cloud_mp3_file
+
+
 model = create_gemini_model()
 
 st.write(
@@ -74,6 +109,7 @@ if uploaded_file is not None:
     os.remove(tmp_file)
     st.video(uploaded_file)
     st.audio(mp3_stream, autoplay=True)
+    cloud_mp3_file = store_audio_file(mp3_stream, file_name)
 
 if st.button("Example video", type="primary"):
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"

@@ -1,3 +1,5 @@
 streamlit
 google-generativeai
 gTTS == 2.5.2
+gcsfs==2024.6.1
+st-files-connection
