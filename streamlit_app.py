@@ -12,9 +12,9 @@ from gtts import gTTS
 from io import BytesIO
 from st_files_connection import FilesConnection
 
-MODEL_TO_USE = "pro-1.5"
+MODEL_TO_USE = "flash-1.5"
 GEMINI_MODELS = {
-    "fast-1.5": "gemini-1.5-flash",
+    "flash-1.5": "gemini-1.5-flash",
     "pro-1.5": "gemini-1.5-pro"
 }
 
