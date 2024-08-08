@@ -11,6 +11,12 @@ from gtts import gTTS
 from io import BytesIO
 from st_files_connection import FilesConnection
 
+MODEL_TO_USE = "pro-1.5"
+GEMINI_MODELS = {
+    "fast-1.5": "gemini-1.5-flash",
+    "pro-1.5": "gemini-1.5-pro"
+}
+
 st.title("EyeHear 👁️👂")
 
 CLOUD_STORAGE_BUCKET = "eyehear-firebase.appspot.com"
@@ -41,6 +47,10 @@ a recording from a doorbell camera, or that it is from a Ring doorbell,
 or anything regarding the positioning of the camera.
 """
 
+def get_gemini_model():
+    return GEMINI_MODELS[MODEL_TO_USE]
+
+
 @st.cache_data
 def create_gemini_model():
     # store api key in .streamlit/secrets.toml
@@ -53,7 +63,7 @@ def create_gemini_model():
         "response_mime_type": "application/json",  # "text/plain",
     }
     return genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name=get_gemini_model(),
     generation_config=generation_config,
     system_instruction=prompt_json)
 
