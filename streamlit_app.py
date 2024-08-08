@@ -166,7 +166,7 @@ if uploaded_file is not None:
 
 if st.button("Example video", type="primary", on_click=update_key):
     # just send the video to Gemini and generate audio
-    example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"
+    example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408081615.mp4"
     st.toast("Processing example video")
     response = model.generate_content(example_url)
     response_data = json.loads(response.text)
