@@ -32,7 +32,7 @@ def update_key():
 def get_user_id():
     return GUEST_USER_ID
 
-prompt_json = "Describe the video with details that would be included in a police report.   The description should include:\n\n1. If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2. If any animals are detected\n  a. provide a count of each type\n3. Describe any vehicles present\n4. Do not read watermarks, but do read text on clothing and vehicles.\n5. Do not opine on whether the video depicts a real situation or not\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
+prompt_json = "Describe the video with details that would be included in a police report.   The description should include:\n\n1. If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2. If any animals are detected\n  a. provide a count of each type\n3. Describe any vehicles present\n4. Do not read watermarks, but do read text on clothing and vehicles.\n5. Do not opine on whether the video depicts a real situation or not\n6. Do not mention what recorded the video\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
 
 prompt_json2 = """
 Accurately, and succinctly describe the contents of the attached video 
@@ -61,7 +61,7 @@ def create_gemini_model():
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
     generation_config = {
-        "temperature": 0.5,
+        "temperature": 0.6,
         "top_p": 0.95,
         "top_k": 64,
         "max_output_tokens": 8192,
@@ -157,7 +157,7 @@ if uploaded_file is not None:
     os.remove(tmp_file)
     container.header(f"Video Received at {time_received}")
     st.video(uploaded_file)
-    container.header("Video Transcription")
+    container.header("Transcription")
     container.subheader("Audio")
     container.audio(mp3_stream, autoplay=True)
     container.subheader("Text")
@@ -179,7 +179,7 @@ if st.button("Example video", type="primary", on_click=update_key):
     mp3_stream = generate_audio(video_description)
     container.header("Video received (example)")
     st.video(example_url)
-    container.header("Video Transcription")
+    container.header("Transcription")
     container.subheader("Audio")
     container.audio(mp3_stream, autoplay=True)
     container.subheader("Text")
