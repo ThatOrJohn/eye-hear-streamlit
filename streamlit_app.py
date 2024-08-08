@@ -32,7 +32,27 @@ def update_key():
 def get_user_id():
     return GUEST_USER_ID
 
-prompt_json = "Describe the video with details that would be included in a police report.   The description should include:\n\n1. If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2. If any animals are detected\n  a. provide a count of each type\n3. Describe any vehicles present\n4. Do not read watermarks, but do read text on clothing and vehicles.\n5. Do not opine on whether the video depicts a real situation or not\n6. Do not mention what recorded the video\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
+prompt_json = """Describe the video with details that would be 
+included in a police report.   The description should include: 
+1. If any humans are detected
+ a. provide a total headcount 
+ b. describe each human's appearance and gestures 
+2. If any animals are detected 
+ a. provide a count of each type 
+3. Describe any vehicles present 
+4. Do not read watermarks, but do read text on clothing and vehicles. 
+5. Do not opine on whether the video depicts a real situation or not
+6. Do not mention what recorded the video
+
+The response should use this JSON schema:
+
+{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}
+
+A good description might look like this:
+
+There are 2 people present.  One is dressed as a creepy clown, and 
+the other is wearing a brown shirt that says UPS.  The person in 
+the clown is holding a knife.  There is 1 orange cat behind them."""
 
 prompt_json2 = """
 Accurately, and succinctly describe the contents of the attached video 
@@ -55,7 +75,6 @@ def get_gemini_model():
     return GEMINI_MODELS[MODEL_TO_USE]
 
 
-@st.cache_data
 def create_gemini_model():
     # store api key in .streamlit/secrets.toml
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -127,6 +146,32 @@ def store_video_details(video_details):
         st.error("Error storing video description", icon="🚨")
     print("completed store_video_details")
 
+# Begin Gemini file upload
+def upload_to_gemini(path, mime_type=None):
+  """Uploads the given file to Gemini.
+
+  See https://ai.google.dev/gemini-api/docs/prompting_with_media
+  """
+  file = genai.upload_file(path, mime_type=mime_type)
+  print(f"Uploaded file '{file.display_name}' as: {file.uri}")
+  return file
+
+def wait_for_file_active(file):
+    print("Waiting for file processing...")
+    name = file.name
+    gemini_file = genai.get_file(name)
+    print(f"state {gemini_file.state.name}")
+    while gemini_file.state.name == "PROCESSING":
+        print(".", end="", flush=True)
+        time.sleep(1)
+        gemini_file = genai.get_file(name)
+    if gemini_file.state.name != "ACTIVE":
+        raise Exception(f"File {gemini_file.name} failed to process")
+    print("...file ready")
+
+
+# End Gemini file upload
+
 model = create_gemini_model()
 
 st.write(
@@ -148,9 +193,12 @@ if uploaded_file is not None:
     with open(tmp_file, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
+    gemini_file = upload_to_gemini(tmp_file, mime_type="video/mp4")
+    wait_for_file_active(gemini_file)
+
     st.toast("Processing new video")
-    response = model.generate_content(tmp_file)
-    print(f"response {response.parts}")
+    #response = model.generate_content(tmp_file)
+    response = model.generate_content(gemini_file)
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
     mp3_stream = generate_audio(video_description)
@@ -173,6 +221,8 @@ if st.button("Example video", type="primary", on_click=update_key):
     # just send the video to Gemini and generate audio
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408081615.mp4"
     st.toast("Processing example video")
+    print(f"model config: {model._generation_config}")
+    print(f"prompt: {model._system_instruction}")
     response = model.generate_content(example_url)
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
