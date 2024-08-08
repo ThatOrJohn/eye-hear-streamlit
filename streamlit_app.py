@@ -6,6 +6,7 @@ import time
 import google.generativeai as genai
 
 from google.cloud import firestore
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from google.oauth2 import service_account
 from gtts import gTTS
 from io import BytesIO
@@ -41,8 +42,8 @@ Describe the contents of the attached video using this JSON schema:
 Your description should contain information that would be useful for 
 documenting in a police report.  Pay particular attention to people,
 gestures, animals, and vehicles.  You are only to discuss the contents 
-of provided videos.  Transcribe any detectable audio.  Keep your 
-descriptions under 1500 words per video.  Do not state the video is
+and actions that exist in the video.  Transcribe any detectable audio.  
+Keep your descriptions under 1000 words per video.  Do not state the video is
 a recording from a doorbell camera, or that it is from a Ring doorbell,
 or anything regarding the positioning of the camera.
 """
@@ -55,6 +56,7 @@ def get_gemini_model():
 def create_gemini_model():
     # store api key in .streamlit/secrets.toml
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
     generation_config = {
         "temperature": 1,
         "top_p": 0.95,
@@ -62,6 +64,13 @@ def create_gemini_model():
         "max_output_tokens": 8192,
         "response_mime_type": "application/json",  # "text/plain",
     }
+
+    safety_settings={
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    }
+
     return genai.GenerativeModel(
     model_name=get_gemini_model(),
     generation_config=generation_config,
