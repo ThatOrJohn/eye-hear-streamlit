@@ -12,23 +12,28 @@ def get_user_id():
     return GUEST_USER_ID
 
 st.title("EyeHear History")
+st.write("Last 20 events")
 
-key_dict = json.loads(st.secrets.FIREBASE_KEY)
-credentials = service_account.Credentials.from_service_account_info(key_dict)
-firestore_db = firestore.Client(credentials=credentials, project="eyehear-firebase")
-collection = firestore_db.collection("videos")
+try:
+    key_dict = json.loads(st.secrets.FIREBASE_KEY)
+    credentials = service_account.Credentials.from_service_account_info(key_dict)
+    firestore_db = firestore.Client(credentials=credentials, project="eyehear-firebase")
+    collection = firestore_db.collection("videos")
 
-query_last_20_videos = collection.where(filter=FieldFilter("user_id", "==", get_user_id())).order_by("timestamp", direction=firestore.Query.DESCENDING).limit(20)
+    query_last_20_videos = collection.where(filter=FieldFilter("user_id", "==", get_user_id())).order_by("timestamp", direction=firestore.Query.DESCENDING).limit(20)
 
-results = query_last_20_videos.get()
-video_list = []
+    results = query_last_20_videos.get()
 
-for video in results:
-    video_list.append(video.to_dict())
+    video_list = []
 
-video_df = pd.DataFrame.from_dict(video_list, orient='columns')
-video_df = video_df.drop(columns=['audio_location', 'user_id'])
-cols = ['timestamp', 'description', 'humans_detected', 'animals_detected']
-video_df = video_df[cols + [c for c in video_df.columns if c not in cols]]
+    for video in results:
+        video_list.append(video.to_dict())
 
-st.write(video_df)
+    video_df = pd.DataFrame.from_dict(video_list, orient='columns')
+    video_df = video_df.drop(columns=['audio_location', 'user_id'])
+    cols = ['timestamp', 'description', 'humans_detected', 'animals_detected']
+    video_df = video_df[cols + [c for c in video_df.columns if c not in cols]]
+
+    st.write(video_df)
+except Exception as e:
+    print(f"Exception: {e}")
