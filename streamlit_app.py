@@ -126,7 +126,7 @@ def store_video_details(video_details):
 model = create_gemini_model()
 
 st.write(
-    "Proof of concept"
+    "Proof of Concept:  Audibly describe videos received by doorbell camera"
 )
 st.write(
     """For now we'll manually upload an mp4 doorbell video.  Ultimately, this would 
