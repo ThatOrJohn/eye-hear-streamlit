@@ -32,18 +32,21 @@ def update_key():
 def get_user_id():
     return GUEST_USER_ID
 
-prompt_json = """
-Describe the contents of the attached video using this JSON schema:
+prompt_json = "Describe the video with details that would be included in a police report.   The description should include.\n\n1.  If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2.  If any animals are detected\n  a.  provide a count of each type\n3.  Describe any vehicles present\n4.  Do not opine on whether the video depicts a real situation or not\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
+
+prompt_json2 = """
+Accurately, and succinctly describe the contents of the attached video 
+using this JSON schema:
 
 {'description': str,
 'humans_detected': bool,
 'animals_detected': bool}
 
-Your description should contain information that would be useful for 
+Description should contain information that would be useful for 
 documenting in a police report.  Pay particular attention to people,
 gestures, animals, and vehicles.  You are only to discuss the contents 
 and actions that exist in the video.  Transcribe any detectable audio.  
-Keep your descriptions under 1000 words per video.  Do not state the video is
+Keep your descriptions under 700 words per video.  Do not state the video is
 a recording from a doorbell camera, or that it is from a Ring doorbell,
 or anything regarding the positioning of the camera.
 """
@@ -52,24 +55,17 @@ def get_gemini_model():
     return GEMINI_MODELS[MODEL_TO_USE]
 
 
-@st.cache_data
+# @st.cache_data
 def create_gemini_model():
     # store api key in .streamlit/secrets.toml
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
     generation_config = {
-        "temperature": 1,
+        "temperature": 0.7,
         "top_p": 0.95,
         "top_k": 64,
         "max_output_tokens": 8192,
-        "response_mime_type": "application/json",  # "text/plain",
-    }
-
-    safety_settings={
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH
+        "response_mime_type": "application/json", 
     }
 
     return genai.GenerativeModel(
@@ -146,6 +142,7 @@ if uploaded_file is not None:
     
     st.toast("Processing new video")
     response = model.generate_content(tmp_file)
+    print(f"response {response.parts}")
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
     mp3_stream = generate_audio(video_description)
@@ -169,6 +166,7 @@ if st.button("Example video", type="primary", on_click=update_key):
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408081615.mp4"
     st.toast("Processing example video")
     response = model.generate_content(example_url)
+    print(f"response {response}")
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
     mp3_stream = generate_audio(video_description)
