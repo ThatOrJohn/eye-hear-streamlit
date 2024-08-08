@@ -76,6 +76,7 @@ def store_audio_file(mp3_bytes_io, video_file_name):
             gcs_file.write(mp3_bytes_io.getbuffer())
     except Exception as e:
         print(f"Exception: {e}")
+        st.error("Error storing audio file", icon="🚨")
     finally:
         if os.path.exists(tmp_mp3_file):
             os.remove(tmp_mp3_file)
@@ -93,6 +94,7 @@ def store_video_details(video_details):
         video_document = collection.add(document_data=video_details)
     except Exception as e:
         print(f"Exception: {e}")
+        st.error("Error storing video description", icon="🚨")
     print("completed store_video_details")
 
 model = create_gemini_model()
@@ -106,6 +108,7 @@ st.write(
 )
 
 uploaded_file = st.file_uploader("Upload doorbell video", type=['mp4'])
+container = st.container(border=True)
 
 if uploaded_file is not None:
     time_received = datetime.datetime.now().replace(microsecond=0).isoformat()
@@ -121,13 +124,13 @@ if uploaded_file is not None:
     video_description = response_data.get('description')
     mp3_stream = generate_audio(video_description)
     os.remove(tmp_file)
-    st.header(f"Video Received at {time_received}")
+    container.header(f"Video Received at {time_received}")
     st.video(uploaded_file)
-    st.header("Video Transcription")
-    st.subheader("Audio")
-    st.audio(mp3_stream, autoplay=True)
-    st.subheader("Text")
-    st.write(video_description)
+    container.header("Video Transcription")
+    container.subheader("Audio")
+    container.audio(mp3_stream, autoplay=True)
+    container.subheader("Text")
+    container.write(video_description)
     cloud_mp3_file = store_audio_file(mp3_stream, file_name)
 
     response_data['user_id'] = get_user_id()
@@ -143,10 +146,10 @@ if st.button("Example video", type="primary"):
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
     mp3_stream = generate_audio(video_description)
-    st.header("Video received")
+    container.header("Video received (example)")
     st.video(example_url)
-    st.header("Video Transcription")
-    st.subheader("Audio")
-    st.audio(mp3_stream, autoplay=True)
-    st.subheader("Text")
-    st.write(video_description)
+    container.header("Video Transcription")
+    container.subheader("Audio")
+    container.audio(mp3_stream, autoplay=True)
+    container.subheader("Text")
+    container.write(video_description)
