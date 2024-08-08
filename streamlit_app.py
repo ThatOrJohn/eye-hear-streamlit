@@ -32,7 +32,7 @@ def update_key():
 def get_user_id():
     return GUEST_USER_ID
 
-prompt_json = "Describe the video with details that would be included in a police report.   The description should include.\n\n1.  If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2.  If any animals are detected\n  a.  provide a count of each type\n3.  Describe any vehicles present\n4.  Do not opine on whether the video depicts a real situation or not\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
+prompt_json = "Describe the video with details that would be included in a police report.   The description should include:\n\n1. If any humans are detected\n  a. provide a total headcount\n  b. describe each human's appearance and gestures\n2. If any animals are detected\n  a. provide a count of each type\n3. Describe any vehicles present\n4. Do not read watermarks, but do read text on clothing and vehicles.\n5. Do not opine on whether the video depicts a real situation or not\n\nThe response should use this JSON schema:\n\n{'description': str,\n'humans_detected': bool,\n'animals_detected': bool}",
 
 prompt_json2 = """
 Accurately, and succinctly describe the contents of the attached video 
