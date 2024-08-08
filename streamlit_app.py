@@ -16,6 +16,12 @@ st.title("EyeHear 👁️👂")
 CLOUD_STORAGE_BUCKET = "eyehear-firebase.appspot.com"
 GUEST_USER_ID = "f3d98f8c-cf8d-40a3-b5c3-5c7cd5e2b52a"
 
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
+def update_key():
+    st.session_state.uploader_key += 1
+
 def get_user_id():
     return GUEST_USER_ID
 
@@ -107,7 +113,7 @@ st.write(
     listen for incoming doorbell events, and automatically read transcriptions aloud."""
 )
 
-uploaded_file = st.file_uploader("Upload doorbell video", type=['mp4'])
+uploaded_file = st.file_uploader("Upload doorbell video", type=['mp4'], key=f"uploader_{st.session_state.uploader_key}")
 container = st.container(border=True)
 
 if uploaded_file is not None:
@@ -138,7 +144,7 @@ if uploaded_file is not None:
     response_data['audio_location'] = cloud_mp3_file
     store_video_details(response_data)
 
-if st.button("Example video", type="primary"):
+if st.button("Example video", type="primary", on_click=update_key):
     # just send the video to Gemini and generate audio
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"
     st.toast("Processing example video")
