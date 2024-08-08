@@ -115,6 +115,7 @@ if uploaded_file is not None:
     with open(tmp_file, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
+    st.toast("Processing new video")
     response = model.generate_content(tmp_file)
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
@@ -137,6 +138,7 @@ if uploaded_file is not None:
 if st.button("Example video", type="primary"):
     # just send the video to Gemini and generate audio
     example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408061842.mp4"
+    st.toast("Processing example video")
     response = model.generate_content(example_url)
     response_data = json.loads(response.text)
     video_description = response_data.get('description')
