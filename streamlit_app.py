@@ -55,7 +55,7 @@ def get_gemini_model():
     return GEMINI_MODELS[MODEL_TO_USE]
 
 
-# @st.cache_data
+@st.cache_data
 def create_gemini_model():
     # store api key in .streamlit/secrets.toml
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
