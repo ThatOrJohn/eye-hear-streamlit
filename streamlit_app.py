@@ -11,6 +11,7 @@ from google.oauth2 import service_account
 from gtts import gTTS
 from io import BytesIO
 from st_files_connection import FilesConnection
+from urllib.request import urlretrieve
 
 MODEL_TO_USE = "flash-1.5"
 GEMINI_MODELS = {
@@ -18,6 +19,10 @@ GEMINI_MODELS = {
     "pro-1.5": "gemini-1.5-pro"
 }
 
+EXAMPLE_URL = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408081615.mp4"
+EXAMPLE_TMP_FILE = "/tmp/Ring_FrontDoor_202408081615.mp4"
+
+urlretrieve(EXAMPLE_URL, EXAMPLE_TMP_FILE)
 st.title("EyeHear 👁️👂")
 
 CLOUD_STORAGE_BUCKET = "eyehear-firebase.appspot.com"
@@ -163,16 +168,51 @@ def wait_for_file_active(file):
     print(f"state {gemini_file.state.name}")
     while gemini_file.state.name == "PROCESSING":
         print(".", end="", flush=True)
+        st.spinner('Uploading video to AI')
         time.sleep(1)
         gemini_file = genai.get_file(name)
     if gemini_file.state.name != "ACTIVE":
         raise Exception(f"File {gemini_file.name} failed to process")
     print("...file ready")
 
-
 # End Gemini file upload
 
 model = create_gemini_model()
+
+def process_user_video(tmp_video_file):
+    print("begin process_user_video()")
+    time_received = datetime.datetime.now().replace(microsecond=0).isoformat()
+    gemini_file = upload_to_gemini(tmp_video_file, mime_type="video/mp4")
+    wait_for_file_active(gemini_file)
+
+    st.toast("Processing new video")
+    response = model.generate_content(gemini_file)
+    response_data = json.loads(response.text)
+    video_description = response_data.get('description')
+    mp3_stream = generate_audio(video_description)
+    
+    container.header(f"Video Received at {time_received}")
+    if tmp_video_file != EXAMPLE_TMP_FILE:
+        st.video(uploaded_file)
+    else:
+        st.video(EXAMPLE_TMP_FILE)
+
+    container.header("Transcription")
+    container.subheader("Audio")
+    container.audio(mp3_stream, autoplay=True)
+    container.subheader("Text")
+    container.write(video_description)
+    
+    if tmp_video_file != EXAMPLE_TMP_FILE:
+        response_data['user_id'] = get_user_id()
+        response_data['timestamp'] = time_received
+        response_data['audio_location'] = cloud_mp3_file
+
+        cloud_mp3_file = store_audio_file(mp3_stream, file_name)
+        os.remove(tmp_video_file)
+        store_video_details(response_data)
+
+    print("end process_user_video()")
 
 st.write(
     "Proof of Concept:  Audibly describe videos received by doorbell camera"
@@ -186,51 +226,13 @@ uploaded_file = st.file_uploader("Upload doorbell video", type=['mp4'], key=f"up
 container = st.container(border=True)
 
 if uploaded_file is not None:
-    time_received = datetime.datetime.now().replace(microsecond=0).isoformat()
     file_name = uploaded_file.name
     tmp_file = f"/tmp/{file_name}"
     
     with open(tmp_file, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
-    gemini_file = upload_to_gemini(tmp_file, mime_type="video/mp4")
-    wait_for_file_active(gemini_file)
-
-    st.toast("Processing new video")
-    #response = model.generate_content(tmp_file)
-    response = model.generate_content(gemini_file)
-    response_data = json.loads(response.text)
-    video_description = response_data.get('description')
-    mp3_stream = generate_audio(video_description)
-    os.remove(tmp_file)
-    container.header(f"Video Received at {time_received}")
-    st.video(uploaded_file)
-    container.header("Transcription")
-    container.subheader("Audio")
-    container.audio(mp3_stream, autoplay=True)
-    container.subheader("Text")
-    container.write(video_description)
-    cloud_mp3_file = store_audio_file(mp3_stream, file_name)
-
-    response_data['user_id'] = get_user_id()
-    response_data['timestamp'] = time_received
-    response_data['audio_location'] = cloud_mp3_file
-    store_video_details(response_data)
+    process_user_video(tmp_file)
 
 if st.button("Example video", type="primary", on_click=update_key):
-    # just send the video to Gemini and generate audio
-    example_url = "https://github.com/ThatOrJohn/eye-hear-streamlit/raw/main/examples/Ring_FrontDoor_202408081615.mp4"
-    st.toast("Processing example video")
-    print(f"model config: {model._generation_config}")
-    print(f"prompt: {model._system_instruction}")
-    response = model.generate_content(example_url)
-    response_data = json.loads(response.text)
-    video_description = response_data.get('description')
-    mp3_stream = generate_audio(video_description)
-    container.header("Video received (example)")
-    st.video(example_url)
-    container.header("Transcription")
-    container.subheader("Audio")
-    container.audio(mp3_stream, autoplay=True)
-    container.subheader("Text")
-    container.write(video_description)
+    process_user_video(EXAMPLE_TMP_FILE)
