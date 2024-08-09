@@ -193,9 +193,9 @@ def process_user_video(tmp_video_file):
     
     container.header(f"Video Received at {time_received}")
     if tmp_video_file != EXAMPLE_TMP_FILE:
-        st.video(uploaded_file)
+        st.video(uploaded_file, autoplay=True, muted=True)
     else:
-        st.video(EXAMPLE_TMP_FILE)
+        st.video(EXAMPLE_TMP_FILE, autoplay=True, muted=True)
 
     container.header("Transcription")
     container.subheader("Audio")
