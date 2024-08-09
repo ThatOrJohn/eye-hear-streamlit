@@ -204,11 +204,11 @@ def process_user_video(tmp_video_file):
     container.write(video_description)
     
     if tmp_video_file != EXAMPLE_TMP_FILE:
+        cloud_mp3_file = store_audio_file(mp3_stream, file_name)
         response_data['user_id'] = get_user_id()
         response_data['timestamp'] = time_received
         response_data['audio_location'] = cloud_mp3_file
 
-        cloud_mp3_file = store_audio_file(mp3_stream, file_name)
         os.remove(tmp_video_file)
         store_video_details(response_data)
 
